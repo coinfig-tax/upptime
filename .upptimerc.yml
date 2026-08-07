@@ -1,31 +1,34 @@
-# Change these first
-owner: upptime # Your GitHub organization or username, where this repository lives
-repo: upptime # The name of this repository
+owner: coinfig-tax
+repo: upptime
+user-agent: coinfig-tax
 
 sites:
-  - name: Google
-    url: https://www.google.com
-  - name: Wikipedia
-    url: https://en.wikipedia.org
-  - name: Hacker News
-    url: https://news.ycombinator.com
-  - name: Secret Site
-    url: $SECRET_SITE
+  # The customer-facing API, checked via its health endpoint through the full
+  # public path (DNS -> Cloudflare -> ALB -> api) — the path CloudWatch can't see.
+  - name: Coinfig API
+    url: https://api.coinfig.tax/api/health
+    slug: coinfig-api
+    maxResponseTime: 5000
+
+  - name: Coinfig App
+    url: https://coinfig.tax
+    slug: coinfig-app
+    maxResponseTime: 5000
+
+# Down-incidents are opened as GitHub issues and assigned here; watching this
+# repo is what produces operator e-mail alerts.
+assignees:
+  - SeekoeiD
 
 status-website:
-  # Add your custom domain name, or remove the `cname` line if you don't have a domain
-  # Uncomment the `baseUrl` line if you don't have a custom domain and add your repo name there
-  cname: demo.upptime.js.org
-  # baseUrl: /your-repo-name
-  logoUrl: https://raw.githubusercontent.com/upptime/upptime.js.org/master/static/img/icon.svg
-  name: Upptime
-  introTitle: "**Upptime** is the open-source uptime monitor and status page, powered entirely by GitHub."
-  introMessage: This is a sample status page which uses **real-time** data from our [GitHub repository](https://github.com/upptime/upptime). No server required — just GitHub Actions, Issues, and Pages. [**Get your own for free**](https://github.com/upptime/upptime)
+  cname: status.coinfig.tax
+  name: Coinfig Status
+  introTitle: "**Coinfig** service status"
+  introMessage: Live availability and response times for the Coinfig platform, checked every ~5 minutes from GitHub's infrastructure — independent of our own hosting. All data comes straight from this [GitHub repository](https://github.com/coinfig-tax/upptime).
   navbar:
     - title: Status
       href: /
-    - title: GitHub
-      href: https://github.com/$OWNER/$REPO
+    - title: coinfig.tax
+      href: https://coinfig.tax
 
-# Upptime also supports notifications, assigning issues, and more
-# See https://upptime.js.org/docs/configuration
+# Full schema: https://upptime.js.org/docs/configuration
