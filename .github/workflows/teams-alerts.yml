@@ -1,0 +1,72 @@
+# Posts Upptime incidents to the MS Teams alerts channel.
+#
+# Upptime opens a GitHub issue (labelled "status") when a monitored site goes
+# down or degrades, and closes it on recovery. This workflow mirrors those
+# transitions into Teams via an incoming webhook, because the tenant does not
+# have the GitHub app for Teams installed (so channel subscriptions via
+# "@GitHub subscribe" are not available).
+#
+# Requires the MSTEAMS_WEBHOOK_URL repo secret: a Teams Workflows webhook URL
+# ("Post to a channel when a webhook request is received" template) for the
+# alerts channel. Until the secret is set, runs skip without failing.
+
+name: Teams Alerts
+
+on:
+  issues:
+    types: [opened, reopened, closed]
+
+permissions: {}
+
+jobs:
+  notify:
+    name: Notify Teams
+    runs-on: ubuntu-latest
+    if: contains(join(github.event.issue.labels.*.name, ','), 'status')
+    steps:
+      - name: Post incident card
+        env:
+          WEBHOOK_URL: ${{ secrets.MSTEAMS_WEBHOOK_URL }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_ACTION: ${{ github.event.action }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "MSTEAMS_WEBHOOK_URL secret not set - skipping notification"
+            exit 0
+          fi
+
+          if [ "$ISSUE_ACTION" = "closed" ]; then
+            HEADLINE="🟢 Resolved"
+            COLOR="Good"
+          else
+            HEADLINE="🔴 Outage"
+            COLOR="Attention"
+          fi
+
+          jq -n \
+            --arg headline "$HEADLINE" \
+            --arg color "$COLOR" \
+            --arg title "$ISSUE_TITLE" \
+            --arg url "$ISSUE_URL" \
+            '{
+              type: "message",
+              attachments: [{
+                contentType: "application/vnd.microsoft.card.adaptive",
+                content: {
+                  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                  type: "AdaptiveCard",
+                  version: "1.4",
+                  msteams: { width: "Full" },
+                  body: [
+                    { type: "TextBlock", size: "Medium", weight: "Bolder",
+                      color: $color, text: ($headline + ": " + $title) },
+                    { type: "TextBlock", wrap: true,
+                      text: ("Public status page: [status.coinfig.tax](https://status.coinfig.tax) · [Incident details](" + $url + ")") }
+                  ]
+                }
+              }]
+            }' > payload.json
+
+          curl -fsS -X POST -H 'Content-Type: application/json' \
+            -d @payload.json "$WEBHOOK_URL"
