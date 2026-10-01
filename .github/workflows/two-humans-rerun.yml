@@ -55,10 +55,17 @@ jobs:
               return;
             }
 
-            await github.rest.actions.reRunWorkflow({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: run.id,
-            });
+            // GitHub refuses re-runs more than 30 days after the original run. A new head
+            // commit gets a fresh two-humans run (and no stale failed one beside it).
+            try {
+              await github.rest.actions.reRunWorkflow({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: run.id,
+              });
+            } catch (e) {
+              core.setFailed(`Could not re-run two-humans run ${run.id} (${e.status}: ${e.message}). If the run is older than 30 days, rebase the PR (\`@dependabot rebase\`) or push to it so a fresh run starts on the new commit.`);
+              return;
+            }
 
             core.info(`Re-ran two-humans run ${run.id} (was ${run.conclusion}).`);
