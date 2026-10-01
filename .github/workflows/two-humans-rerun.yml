@@ -1,0 +1,64 @@
+name: Re-evaluate two humans on review
+
+# When a bot-authored PR gets a review (or one is dismissed), re-run the existing
+# `two-humans` check from two-humans.yml so it re-counts approvals. Re-running
+# replaces the check run in place; a fresh run would add a second `two-humans`
+# check run and the earlier failed one would keep the PR blocked.
+
+on:
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  actions: write
+
+jobs:
+  rerun-two-humans:
+    if: github.event.pull_request.user.type == 'Bot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-run the two-humans check for the PR head
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const sha = context.payload.pull_request.head.sha;
+
+            const findRun = async () => {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'two-humans.yml',
+                head_sha: sha,
+                event: 'pull_request',
+                per_page: 1,
+              });
+
+              return data.workflow_runs[0];
+            };
+
+            let run = await findRun();
+
+            // A run still in progress cannot be re-run; wait for it (it may also have
+            // started before this review and already be reading stale approvals).
+            for (let i = 0; run && run.status !== 'completed' && i < 20; i++) {
+              await new Promise(r => setTimeout(r, 15000));
+              run = await findRun();
+            }
+
+            if (!run) {
+              core.setFailed(`No two-humans run for ${sha}; push to the PR (or ask the bot to rebase) to start one.`);
+              return;
+            }
+
+            if (run.status !== 'completed') {
+              core.setFailed(`two-humans run ${run.id} still ${run.status} after 5 minutes; re-run it by hand.`);
+              return;
+            }
+
+            await github.rest.actions.reRunWorkflow({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+            });
+
+            core.info(`Re-ran two-humans run ${run.id} (was ${run.conclusion}).`);
