@@ -47,7 +47,36 @@ jobs:
               }
             }
 
-            const approvers = [...verdict].filter(([, state]) => state === 'APPROVED').map(([login]) => login);
+            // Only approvals branch protection would count: reviewers with write access or above.
+            // A read-only collaborator (or anyone, on a public repo) can still submit APPROVED.
+            const approvers = [];
+
+            for (const [login, state] of verdict) {
+              if (state !== 'APPROVED') continue;
+
+              // `permission` is the base level (admin / write / read / none); maintain maps to
+              // write and triage to read, so custom roles resolve correctly too.
+              let permission = 'none';
+
+              try {
+                const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  username: login,
+                });
+
+                permission = data.permission;
+              } catch (e) {
+                core.info(`Could not read ${login}'s permission (${e.status}); not counting the approval.`);
+              }
+
+              if (permission === 'admin' || permission === 'write') {
+                approvers.push(login);
+              } else {
+                core.info(`Ignoring approval from ${login}: permission ${permission} cannot satisfy branch protection.`);
+              }
+            }
+
             core.info(`Bot author ${pr.user.login}; human approvals: ${approvers.join(', ') || 'none'}`);
 
             if (approvers.length < 2) {
