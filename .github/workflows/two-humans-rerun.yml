@@ -26,15 +26,15 @@ jobs:
 
             // Every two-humans run for this PR's head commit. A draft->ready flip or a
             // reopen adds a run on the same commit, and any one left failed keeps blocking,
-            // so all of them get re-run. Runs are matched to this PR so a commit shared
-            // with another PR does not re-run that PR's checks instead.
+            // so all of them get re-run, including pull_request_review runs left by the
+            // first version of two-humans.yml. Runs are matched to this PR so a commit
+            // shared with another PR does not re-run that PR's checks instead.
             const findRuns = async () => {
               const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 workflow_id: 'two-humans.yml',
                 head_sha: sha,
-                event: 'pull_request',
                 per_page: 100,
               });
 
