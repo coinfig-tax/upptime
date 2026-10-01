@@ -1,0 +1,55 @@
+name: Two humans on bot PRs
+
+# ISO 27001 segregation of duties: every change to main/prod needs two people.
+# A human-authored PR gets that from author + one approver (branch protection
+# requires the approval). A bot-authored PR (Dependabot, coinfig-aws-deploy-bot)
+# has no human author, so this check requires two distinct human approvals
+# instead. Branch protection cannot vary the approval count by author, hence a
+# required status check. The job name is the status-check context.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  two-humans:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require two human approvals when a bot authored the PR
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+
+            if (pr.user.type !== 'Bot') {
+              core.info(`Author ${pr.user.login} is a human; the branch-protection approval is the second person.`);
+              return;
+            }
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+
+            // A reviewer's latest APPROVED / CHANGES_REQUESTED / DISMISSED review
+            // is their verdict; plain comments do not change it.
+            const verdict = new Map();
+
+            for (const r of reviews) {
+              if (r.user && r.user.type === 'User' && r.state !== 'COMMENTED' && r.state !== 'PENDING') {
+                verdict.set(r.user.login, r.state);
+              }
+            }
+
+            const approvers = [...verdict].filter(([, state]) => state === 'APPROVED').map(([login]) => login);
+            core.info(`Bot author ${pr.user.login}; human approvals: ${approvers.join(', ') || 'none'}`);
+
+            if (approvers.length < 2) {
+              core.setFailed(`Bot-authored PR needs approvals from two different people (has ${approvers.length}).`);
+            }
