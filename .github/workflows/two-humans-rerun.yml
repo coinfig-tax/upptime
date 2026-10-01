@@ -1,0 +1,83 @@
+name: Re-evaluate two humans on review
+
+# When a bot-authored PR gets a review (or one is dismissed), re-run the existing
+# `two-humans` check from two-humans.yml so it re-counts approvals. Re-running
+# replaces the check run in place; a fresh run would add a second `two-humans`
+# check run and the earlier failed one would keep the PR blocked.
+
+on:
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  actions: write
+
+jobs:
+  rerun-two-humans:
+    if: github.event.pull_request.user.type == 'Bot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-run the two-humans check for the PR head
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const sha = pr.head.sha;
+
+            // Every two-humans run for this PR's head commit. A draft->ready flip or a
+            // reopen adds a run on the same commit, and any one left failed keeps blocking,
+            // so all of them get re-run, including pull_request_review runs left by the
+            // first version of two-humans.yml. Runs are matched to this PR so a commit
+            // shared with another PR does not re-run that PR's checks instead.
+            const findRuns = async () => {
+              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'two-humans.yml',
+                head_sha: sha,
+                per_page: 100,
+              });
+
+              return runs.filter(r => r.pull_requests.length === 0 || r.pull_requests.some(p => p.number === pr.number));
+            };
+
+            let runs = await findRuns();
+
+            // A run still in progress cannot be re-run; wait for it (it may also have
+            // started before this review and already be reading stale approvals).
+            for (let i = 0; runs.some(r => r.status !== 'completed') && i < 20; i++) {
+              await new Promise(r => setTimeout(r, 15000));
+              runs = await findRuns();
+            }
+
+            if (runs.length === 0) {
+              core.setFailed(`No two-humans run for ${sha}; push to the PR (or ask the bot to rebase) to start one.`);
+              return;
+            }
+
+            const failures = [];
+
+            for (const run of runs) {
+              if (run.status !== 'completed') {
+                failures.push(`run ${run.id} still ${run.status} after 5 minutes; re-run it by hand`);
+                continue;
+              }
+
+              // GitHub refuses re-runs more than 30 days after the original run. A new head
+              // commit gets a fresh two-humans run (and no stale failed one beside it).
+              try {
+                await github.rest.actions.reRunWorkflow({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id,
+                });
+
+                core.info(`Re-ran two-humans run ${run.id} (was ${run.conclusion}).`);
+              } catch (e) {
+                failures.push(`could not re-run run ${run.id} (${e.status}: ${e.message})`);
+              }
+            }
+
+            if (failures.length > 0) {
+              core.setFailed(`${failures.join('; ')}. If a run is older than 30 days, rebase the PR (\`@dependabot rebase\`) or push to it so a fresh run starts on the new commit.`);
+            }

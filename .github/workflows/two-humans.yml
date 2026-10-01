@@ -6,12 +6,14 @@ name: Two humans on bot PRs
 # has no human author, so this check requires two distinct human approvals
 # instead. Branch protection cannot vary the approval count by author, hence a
 # required status check. The job name is the status-check context.
+#
+# Reviews do not trigger this workflow directly: a second run would add a second
+# `two-humans` check run, and branch protection keeps blocking on the first, failed
+# one. two-humans-rerun.yml re-runs this workflow's run instead, which replaces it.
 
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
-  pull_request_review:
-    types: [submitted, dismissed]
 
 permissions:
   pull-requests: read
