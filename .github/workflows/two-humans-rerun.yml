@@ -21,51 +21,63 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
-            const sha = context.payload.pull_request.head.sha;
+            const pr = context.payload.pull_request;
+            const sha = pr.head.sha;
 
-            const findRun = async () => {
-              const { data } = await github.rest.actions.listWorkflowRuns({
+            // Every two-humans run for this PR's head commit. A draft->ready flip or a
+            // reopen adds a run on the same commit, and any one left failed keeps blocking,
+            // so all of them get re-run. Runs are matched to this PR so a commit shared
+            // with another PR does not re-run that PR's checks instead.
+            const findRuns = async () => {
+              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 workflow_id: 'two-humans.yml',
                 head_sha: sha,
                 event: 'pull_request',
-                per_page: 1,
+                per_page: 100,
               });
 
-              return data.workflow_runs[0];
+              return runs.filter(r => r.pull_requests.length === 0 || r.pull_requests.some(p => p.number === pr.number));
             };
 
-            let run = await findRun();
+            let runs = await findRuns();
 
             // A run still in progress cannot be re-run; wait for it (it may also have
             // started before this review and already be reading stale approvals).
-            for (let i = 0; run && run.status !== 'completed' && i < 20; i++) {
+            for (let i = 0; runs.some(r => r.status !== 'completed') && i < 20; i++) {
               await new Promise(r => setTimeout(r, 15000));
-              run = await findRun();
+              runs = await findRuns();
             }
 
-            if (!run) {
+            if (runs.length === 0) {
               core.setFailed(`No two-humans run for ${sha}; push to the PR (or ask the bot to rebase) to start one.`);
               return;
             }
 
-            if (run.status !== 'completed') {
-              core.setFailed(`two-humans run ${run.id} still ${run.status} after 5 minutes; re-run it by hand.`);
-              return;
+            const failures = [];
+
+            for (const run of runs) {
+              if (run.status !== 'completed') {
+                failures.push(`run ${run.id} still ${run.status} after 5 minutes; re-run it by hand`);
+                continue;
+              }
+
+              // GitHub refuses re-runs more than 30 days after the original run. A new head
+              // commit gets a fresh two-humans run (and no stale failed one beside it).
+              try {
+                await github.rest.actions.reRunWorkflow({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id,
+                });
+
+                core.info(`Re-ran two-humans run ${run.id} (was ${run.conclusion}).`);
+              } catch (e) {
+                failures.push(`could not re-run run ${run.id} (${e.status}: ${e.message})`);
+              }
             }
 
-            // GitHub refuses re-runs more than 30 days after the original run. A new head
-            // commit gets a fresh two-humans run (and no stale failed one beside it).
-            try {
-              await github.rest.actions.reRunWorkflow({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: run.id,
-              });
-            } catch (e) {
-              core.setFailed(`Could not re-run two-humans run ${run.id} (${e.status}: ${e.message}). If the run is older than 30 days, rebase the PR (\`@dependabot rebase\`) or push to it so a fresh run starts on the new commit.`);
-              return;
+            if (failures.length > 0) {
+              core.setFailed(`${failures.join('; ')}. If a run is older than 30 days, rebase the PR (\`@dependabot rebase\`) or push to it so a fresh run starts on the new commit.`);
             }
-
-            core.info(`Re-ran two-humans run ${run.id} (was ${run.conclusion}).`);
