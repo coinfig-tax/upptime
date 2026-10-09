@@ -4,18 +4,20 @@
     "url": "https://api.coinfig.tax/api/health",
     "icon": "https://icons.duckduckgo.com/ip3/api.coinfig.tax.ico",
     "slug": "coinfig-api",
-    "status": "degraded",
+    "status": "up",
     "uptime": "100.00%",
-    "uptimeDay": "100.00%",
-    "uptimeWeek": "100.00%",
+    "uptimeDay": "99.93%",
+    "uptimeWeek": "99.99%",
     "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
     "time": 1119,
-    "timeDay": 1245,
-    "timeWeek": 1127,
+    "timeDay": 1235,
+    "timeWeek": 1126,
     "timeMonth": 1123,
     "timeYear": 1119,
-    "dailyMinutesDown": {}
+    "dailyMinutesDown": {
+      "2026-10-09": 1
+    }
   },
   {
     "name": "Coinfig App",
