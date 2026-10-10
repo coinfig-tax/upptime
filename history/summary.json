@@ -6,18 +6,16 @@
     "slug": "coinfig-api",
     "status": "up",
     "uptime": "100.00%",
-    "uptimeDay": "99.93%",
-    "uptimeWeek": "99.99%",
+    "uptimeDay": "100.00%",
+    "uptimeWeek": "100.00%",
     "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
-    "time": 1119,
-    "timeDay": 1235,
-    "timeWeek": 1126,
-    "timeMonth": 1123,
-    "timeYear": 1119,
-    "dailyMinutesDown": {
-      "2026-10-09": 1
-    }
+    "time": 1122,
+    "timeDay": 1403,
+    "timeWeek": 1151,
+    "timeMonth": 1129,
+    "timeYear": 1122,
+    "dailyMinutesDown": {}
   },
   {
     "name": "Coinfig App",
@@ -30,11 +28,11 @@
     "uptimeWeek": "100.00%",
     "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
-    "time": 354,
-    "timeDay": 398,
-    "timeWeek": 354,
-    "timeMonth": 368,
-    "timeYear": 354,
+    "time": 355,
+    "timeDay": 407,
+    "timeWeek": 363,
+    "timeMonth": 367,
+    "timeYear": 355,
     "dailyMinutesDown": {}
   }
 ]
