@@ -1,7 +1,7 @@
 url: https://api.coinfig.tax/api/health
-status: degraded
+status: up
 code: 200
-responseTime: 39106
-lastUpdated: 2026-10-23T16:33:19.773Z
+responseTime: 1125
+lastUpdated: 2026-10-23T16:35:14.023Z
 startTime: 2026-08-07T09:30:46.150Z
 generator: Upptime <https://github.com/upptime/upptime>
