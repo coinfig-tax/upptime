@@ -4,18 +4,20 @@
     "url": "https://api.coinfig.tax/api/health",
     "icon": "https://icons.duckduckgo.com/ip3/api.coinfig.tax.ico",
     "slug": "coinfig-api",
-    "status": "up",
+    "status": "down",
     "uptime": "100.00%",
-    "uptimeDay": "100.00%",
+    "uptimeDay": "99.99%",
     "uptimeWeek": "100.00%",
     "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
-    "time": 1198,
-    "timeDay": 1208,
-    "timeWeek": 1354,
-    "timeMonth": 1336,
-    "timeYear": 1198,
-    "dailyMinutesDown": {}
+    "time": 1199,
+    "timeDay": 1375,
+    "timeWeek": 1380,
+    "timeMonth": 1342,
+    "timeYear": 1199,
+    "dailyMinutesDown": {
+      "2026-10-28": 0
+    }
   },
   {
     "name": "Coinfig App",
@@ -24,17 +26,15 @@
     "slug": "coinfig-app",
     "status": "up",
     "uptime": "100.00%",
-    "uptimeDay": "99.75%",
-    "uptimeWeek": "99.96%",
-    "uptimeMonth": "99.99%",
+    "uptimeDay": "100.00%",
+    "uptimeWeek": "100.00%",
+    "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
-    "time": 388,
-    "timeDay": 1097,
-    "timeWeek": 497,
-    "timeMonth": 450,
-    "timeYear": 388,
-    "dailyMinutesDown": {
-      "2026-10-28": 4
-    }
+    "time": 389,
+    "timeDay": 1172,
+    "timeWeek": 501,
+    "timeMonth": 452,
+    "timeYear": 389,
+    "dailyMinutesDown": {}
   }
 ]
