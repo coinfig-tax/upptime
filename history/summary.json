@@ -11,7 +11,7 @@
     "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
     "time": 1198,
-    "timeDay": 1204,
+    "timeDay": 1208,
     "timeWeek": 1354,
     "timeMonth": 1336,
     "timeYear": 1198,
@@ -22,17 +22,19 @@
     "url": "https://coinfig.tax",
     "icon": "https://icons.duckduckgo.com/ip3/coinfig.tax.ico",
     "slug": "coinfig-app",
-    "status": "up",
+    "status": "degraded",
     "uptime": "100.00%",
-    "uptimeDay": "100.00%",
+    "uptimeDay": "99.97%",
     "uptimeWeek": "100.00%",
     "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
-    "time": 379,
-    "timeDay": 401,
-    "timeWeek": 393,
-    "timeMonth": 426,
-    "timeYear": 379,
-    "dailyMinutesDown": {}
+    "time": 388,
+    "timeDay": 1115,
+    "timeWeek": 498,
+    "timeMonth": 450,
+    "timeYear": 388,
+    "dailyMinutesDown": {
+      "2026-10-28": 0
+    }
   }
 ]
